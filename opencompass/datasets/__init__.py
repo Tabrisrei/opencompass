@@ -150,3 +150,12 @@ from .xcopa import *  # noqa: F401, F403
 from .xiezhi import XiezhiDataset, XiezhiRetriever  # noqa: F401, F403
 from .xlsum import *  # noqa: F401, F403
 from .xsum import *  # noqa: F401, F403
+
+from .medqa import MedQADataset
+from .medexqa import MedExQADataset
+from .careqa import CareQADataset
+from .jmed import JMEDDataset
+from .medbullets import MedbulletsOp5Dataset
+from .medmcqa import MedMCQADataset
+from .pubmedqa import PubMedQADataset
+from .medxpertqa import MedXpertQADataset

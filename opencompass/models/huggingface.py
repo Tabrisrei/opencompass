@@ -201,6 +201,7 @@ class HuggingFace(BaseModel):
 
         self._set_model_kwargs_torch_dtype(model_kwargs)
         try:
+            # https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForCausalLM
             self.model = AutoModelForCausalLM.from_pretrained(
                 path, **model_kwargs)
         except ValueError:

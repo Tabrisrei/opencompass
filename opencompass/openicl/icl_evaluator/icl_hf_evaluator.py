@@ -348,7 +348,7 @@ class EDAccEvaluator(AccEvaluator):
 class AccwithDetailsEvaluator(BaseEvaluator):
 
     def score(self, predictions, references, origin_prompt) -> dict:
-
+        # import pdb; pdb.set_trace()
         if len(predictions) != len(references):
             return {'error': 'preds and refrs have different length.'}
 

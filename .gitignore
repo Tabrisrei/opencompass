@@ -4,6 +4,7 @@ outputs/
 scripts/
 icl_inference_output/
 .vscode/
+.conda
 tmp/
 configs/eval_subjective_alignbench_test.py
 configs/openai_key.py

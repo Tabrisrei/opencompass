@@ -80,6 +80,9 @@ class GenInferencer(BaseInferencer):
         self.save_every = save_every
 
     def inference(self,
+                  # The above code seems to be a comment in Python. Comments in Python start with a
+                  # hash symbol (#) and are used to provide explanations or notes within the code for
+                  # better understanding. In this case, the comment says "retriever".
                   retriever: BaseRetriever,
                   ice_template: Optional[PromptTemplate] = None,
                   prompt_template: Optional[PromptTemplate] = None,
@@ -95,7 +98,7 @@ class GenInferencer(BaseInferencer):
 
         # 2. Get results of retrieval process
         ice_idx_list = retriever.retrieve()
-
+        # import pdb; pdb.set_trace()
         # 3. Generate prompts for testing input
         prompt_list = self.get_generation_prompt_list_from_retriever_indices(
             ice_idx_list,
@@ -104,13 +107,13 @@ class GenInferencer(BaseInferencer):
             max_seq_len=self.max_seq_len,
             ice_template=ice_template,
             prompt_template=prompt_template)
-
+        # pdb.set_trace()
         # 3.1 Fetch and zip prompt & gold answer if output column exists
         ds_reader = retriever.dataset_reader
         if ds_reader.output_column:
             gold_ans = ds_reader.dataset['test'][ds_reader.output_column]
             prompt_list = list(zip(prompt_list, gold_ans))
-
+        # import pdb; pdb.set_trace()
         # Create tmp json file for saving intermediate results and future
         # resuming
         index = 0
@@ -125,7 +128,7 @@ class GenInferencer(BaseInferencer):
             else:
                 output_handler.results_dict = tmp_result_dict
                 index = len(tmp_result_dict)
-
+        # import pdb; pdb.set_trace()
         # 4. Wrap prompts with Dataloader
         logger.info('Starting build dataloader')
         dataloader = self.get_dataloader(prompt_list[index:], self.batch_size)
@@ -138,9 +141,11 @@ class GenInferencer(BaseInferencer):
         for datum in tqdm(dataloader, disable=not self.is_main_process):
             if ds_reader.output_column:
                 entry, golds = list(zip(*datum))
+                # pdb.set_trace()
             else:
                 entry = datum
                 golds = [None for _ in range(len(entry))]
+                # pdb.set_trace()
             # 5-1. Inference with local model
             extra_gen_kwargs = {}
             sig = inspect.signature(self.model.generate)
@@ -149,9 +154,12 @@ class GenInferencer(BaseInferencer):
             if 'min_out_len' in sig.parameters:
                 extra_gen_kwargs['min_out_len'] = self.min_out_len
             with torch.no_grad():
+                # import pdb; pdb.set_trace()
                 parsed_entries = self.model.parse_template(entry, mode='gen')
+                # pdb.set_trace()
                 results = self.model.generate_from_template(
                     entry, max_out_len=self.max_out_len, **extra_gen_kwargs)
+                # pdb.set_trace()
                 generated = results
 
             num_return_sequences = getattr(self.model, 'generation_kwargs',
