@@ -1,0 +1,47 @@
+base:
+    seed: &seed 42
+model:
+    type: Llama
+    path: /home/gsb/LLMCMed/abase_models/meta-llama/Meta-Llama-3-8B
+    tokenizer_mode: slow
+    torch_dtype: auto
+calib:
+    name: pileval
+    download: False
+    path: /home/gsb/LLMCMed/adatasets/processed/pileval
+    n_samples: 128
+    bs: -1
+    seq_len: 512
+    preproc: pileval_awq
+    seed: *seed
+eval:
+    eval_pos: [transformed, fake_quant]
+    name: wikitext2
+    download: True
+    path: /home/gsb/LLMCMed/adatasets/processed/wikitext/wikitext-2-v1
+    seq_len: 2048
+    # For 7B / 13B model eval, bs can be set to "1", and inference_per_block can be set to "False".
+    # For 70B model eval, bs can be set to "20", and inference_per_block can be set to "True".
+    bs: 1
+    inference_per_block: False
+quant:
+    method: Awq
+    weight:
+        bit: 4
+        symmetric: True
+        granularity: per_group
+        group_size: 128
+    special:
+        trans: True
+        # The options for "trans_version" include "v1" and "v2".
+        # But their results don't differ significantly.
+        trans_version: v2
+        weight_clip: True
+        # For 2-bit quantization, setting "clip_sym: False" will yield better results.
+        clip_sym: True
+    modality: language
+save:
+    save_trans: True
+    save_fake: True
+    save_vllm: True
+    save_path: /home/gsb/LLMCMed/atrans_models/meta-llama/awq_w_only_4b_Meta-Llama-3-8B

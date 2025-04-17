@@ -1,0 +1,46 @@
+base:
+    seed: &seed 42
+model:
+    type: Llama
+    path: /mnt/disk1/gsb/base_models/FreedomIntelligence/HuatuoGPT-o1-7B
+    torch_dtype: auto
+calib:
+    name: wikitext2
+    download: True
+    n_samples: 128
+    path: /home/gsb/LLMCMed_dataset/wikitext/wikitext-2-v1/test-00000-of-00001.parquet
+
+    bs: 1
+    seq_len: 2048
+    preproc: wikitext2_gptq
+    seed: *seed
+eval:
+    eval_pos: [pretrain, transformed, fake_quant, fake_quant_wo_kv] # 'transformed'; 'fake_quant_wo_kv'; 'pretrain'
+    type: ppl # vqa code 
+    name: wikitext2
+    download: True
+    path: /home/gsb/LLMCMed_dataset/wikitext/wikitext-2-v1/test-00000-of-00001.parquet
+    bs: 1
+    seq_len: 2048
+    inference_per_block: False
+quant:
+    method: GPTQ
+    weight:
+        bit: 8
+        symmetric: False
+        granularity: per_group
+        group_size: 128
+        # calib_algo: mse
+        # mse_b_num: 2
+    special:
+        actorder: True
+        static_groups: False
+        percdamp: 0.01
+        blocksize: 128
+        true_sequential: True
+    quant_out: True
+save:
+    save_fake: True
+    save_trans: True
+    
+    save_path: /mnt/disk1/gsb/trans_models/FreedomIntelligence/HuatuoGPT-o1-7B
