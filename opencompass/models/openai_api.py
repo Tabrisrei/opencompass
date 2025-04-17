@@ -531,27 +531,26 @@ class OpenAI(BaseAPIModel):
 
 class OpenAISDK(OpenAI):
 
-    def __init__(
-        self,
-        path: str = 'gpt-3.5-turbo',
-        max_seq_len: int = 16384,
-        query_per_second: int = 1,
-        rpm_verbose: bool = False,
-        retry: int = 2,
-        key: str | List[str] = 'ENV',
-        org: str | List[str] | None = None,
-        meta_template: Dict | None = None,
-        openai_api_base: str | List[str] = OPENAISDK_API_BASE,
-        openai_proxy_url: Optional[str] = None,
-        mode: str = 'none',
-        logprobs: bool | None = False,
-        top_logprobs: int | None = None,
-        temperature: float | None = None,
-        tokenizer_path: str | None = None,
-        extra_body: Dict | None = None,
-        verbose: bool = False,
-        status_code_mappings: dict = {},
-    ):
+    def __init__(self,
+                 path: str = 'gpt-3.5-turbo',
+                 max_seq_len: int = 16384,
+                 query_per_second: int = 1,
+                 rpm_verbose: bool = False,
+                 retry: int = 2,
+                 key: str | List[str] = 'ENV',
+                 org: str | List[str] | None = None,
+                 meta_template: Dict | None = None,
+                 openai_api_base: str | List[str] = OPENAISDK_API_BASE,
+                 openai_proxy_url: Optional[str] = None,
+                 mode: str = 'none',
+                 logprobs: bool | None = False,
+                 top_logprobs: int | None = None,
+                 temperature: float | None = None,
+                 tokenizer_path: str | None = None,
+                 extra_body: Dict | None = None,
+                 verbose: bool = False,
+                 status_code_mappings: dict = {},
+                 think_tag: str = '</think>'):
         super().__init__(
             path,
             max_seq_len,
@@ -596,6 +595,7 @@ class OpenAISDK(OpenAI):
         if self.verbose:
             self.logger.info(f'Used openai_client: {self.openai_client}')
         self.status_code_mappings = status_code_mappings
+        self.think_tag = think_tag
 
     def _generate(self,
                   input: PromptList | str,
@@ -652,7 +652,6 @@ class OpenAISDK(OpenAI):
                     self.logger.info('Start calling OpenAI API')
                 responses = self.openai_client.chat.completions.create(
                     **query_data, timeout=timeout)  # timeout in seconds
-
                 if self.verbose:
                     self.logger.info(
                         'Successfully get response from OpenAI API')
@@ -660,10 +659,24 @@ class OpenAISDK(OpenAI):
                         self.logger.info(responses)
                     except Exception:
                         pass  # noqa F841
-                if not responses.choices:
+
+                # Check if response is empty or content is empty
+                if not responses.choices or not responses.choices[
+                        0].message.content:
                     self.logger.error(
-                        'Response is empty, it is an internal server error \
-                            from the API provider.')
+                        'API response is empty, it might be due to excessive '
+                        'input length or an internal server error '
+                        'from your API provider.')
+                    num_retries += 1
+                    # Continue to retry instead of returning empty response
+                    continue
+                # If the model has reasoning_content, concat it
+                # with the content
+                if hasattr(responses.choices[0].message, 'reasoning_content'):
+                    return (responses.choices[0].message.reasoning_content +
+                            self.think_tag +
+                            responses.choices[0].message.content)
+
                 return responses.choices[0].message.content
 
             except (BadRequestError, APIStatusError) as e:

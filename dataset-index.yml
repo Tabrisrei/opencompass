@@ -116,6 +116,12 @@
     paper: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=10778138
     configpath: opencompass/configs/datasets/MedBench/medbench_gen.py
     configpath_llmjudge: ''
+- MedXpertQA:
+    name: MedXpertQA
+    category: Knowledge / Medicine
+    paper: https://arxiv.org/abs/2501.18362
+    configpath: opencompass/configs/datasets/MedXpertQA/MedXpertQA_gen.py
+    configpath_llmjudge: opencompass/configs/datasets/MedXpertQA/MedXpertQA_llmjudge_gen.py
 - musr:
     name: MuSR
     category: Reasoning
@@ -609,8 +615,8 @@
     name: MATH
     category: Math
     paper: https://arxiv.org/pdf/2103.03874
-    configpath: opencompass/configs/datasets/math
-    configpath_llmjudge: ''
+    configpath: opencompass/configs/datasets/math/math_gen.py
+    configpath_llmjudge: opencompass/configs/datasets/math/math_llm_judge_gen.py
 - math500:
     name: MATH500
     category: Math
@@ -715,6 +721,12 @@
     paper: https://arxiv.org/pdf/1809.02789v1
     configpath: opencompass/configs/datasets/obqa/obqa_gen.py
     configpath_llmjudge: ''
+- olymmath:
+    name: OlymMATH
+    category: Math
+    paper: https://arxiv.org/abs/2503.21380
+    configpath: ''
+    configpath_llmjudge: opencompass/configs/datasets/OlymMATH/olymmath_llm_judeg_gen.py
 - piqa:
     name: OpenBookQA
     category: Knowledge / Physics
@@ -985,3 +997,17 @@
     paper: https://arxiv.org/pdf/2502.14739
     configpath: opencompass/configs/datasets/supergpqa
     configpath_llmjudge: ''
+- climaqa:
+    name: ClimaQA
+    category: Science
+    paper: https://arxiv.org/pdf/2410.16701
+    configpath: ''
+    configpath_llmjudge:
+        - opencompass/configs/datasets/ClimaQA/ClimaQA_Gold_llm_judge.py
+        - opencompass/configs/datasets/ClimaQA/ClimaQA_Silver_llm_judge.py
+- physics:
+    name: PHYSICS
+    category: Science
+    paper: https://arxiv.org/pdf/2503.21821
+    configpath: ''
+    configpath_llmjudge: opencompass/configs/datasets/PHYSICS/PHYSICS_llm_judge_gen_a133a2.py

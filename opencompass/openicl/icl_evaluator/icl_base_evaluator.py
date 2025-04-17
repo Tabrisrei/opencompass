@@ -91,7 +91,8 @@ class BaseEvaluator:
     ):
         # Check if predictions and references have the
         # same length if both are provided
-        if 'predictions' in score_kwargs and 'references' in score_kwargs:
+        if ('predictions' in score_kwargs and 'references' in score_kwargs
+                and score_kwargs['references'] is not None):
             if len(score_kwargs['predictions']) != len(
                     score_kwargs['references']):
                 raise ValueError(
@@ -158,9 +159,10 @@ class BaseEvaluator:
                         can_calculate = True
                         c += int(example['detail']['is_correct'])
 
-                if can_calculate and n > 1 and k > 1:
+                k_list = [k] if isinstance(k, int) else k
+                if can_calculate and n > 1 and max(k_list) > 1:
                     thresholds = [0.0, 0.25, 0.5, 0.75, 1.0]
-                    for _k in [k] if isinstance(k, int) else k:
+                    for _k in k_list:
                         for threshold in thresholds:
                             g_pass = compute_g_pass_at_k(n=n,
                                                          c=c,
@@ -173,7 +175,7 @@ class BaseEvaluator:
 
                 eval_details.append(detail)
 
-            if can_calculate and n > 1 and k > 1:
+            if can_calculate and n > 1 and max(k_list) > 1:
                 eval_results.update(self.reduce(eval_details))
 
             # Store eval_details in eval_results
