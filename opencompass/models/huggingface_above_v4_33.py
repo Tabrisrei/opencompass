@@ -11,6 +11,14 @@ from opencompass.registry import MODELS
 from opencompass.utils.logging import get_logger
 from opencompass.utils.prompt import PromptList
 
+try:
+    from llmc.compression.quantization import *
+    from llmc.models import *
+    from llmc.utils.registry_factory import ALGO_REGISTRY, MODEL_REGISTRY
+except Exception:
+    print("\n\n\n\n\n\nIf you want to eval llmc models, you should add llmc to PYTHONPATH.\n\n\n\n\n\n")
+
+
 PromptType = Union[PromptList, str]
 
 
@@ -193,7 +201,10 @@ class HuggingFacewithChatTemplate(BaseModel):
         DEFAULT_TOKENIZER_KWARGS = dict(padding_side='left', truncation_side='left', trust_remote_code=True)
         tokenizer_kwargs = DEFAULT_TOKENIZER_KWARGS
         tokenizer_kwargs.update(kwargs)
+        print(f'path: {path}')
+        print(f"tokenizer_kwargs: {tokenizer_kwargs}")
         self.tokenizer = AutoTokenizer.from_pretrained(path, **tokenizer_kwargs)
+        print(f"self.tokenizer: {self.tokenizer}")
 
         # A patch for some models without pad_token_id
         if pad_token_id is not None:
@@ -218,28 +229,89 @@ class HuggingFacewithChatTemplate(BaseModel):
         raise ValueError('pad_token_id is not set for this tokenizer. Please set `pad_token_id={PAD_TOKEN_ID}` in model_cfg.')
 
     def _load_model(self, path: str, kwargs: dict, peft_path: Optional[str] = None, peft_kwargs: dict = dict()):
-        from transformers import AutoModel, AutoModelForCausalLM
+        print("start to load model...")
+        if len(kwargs) == 0:
+            print("using origin opencompass")
+            from transformers import AutoModel, AutoModelForCausalLM
 
-        DEFAULT_MODEL_KWARGS = dict(device_map='auto', trust_remote_code=True)
-        model_kwargs = DEFAULT_MODEL_KWARGS
-        model_kwargs.update(kwargs)
-        model_kwargs = _set_model_kwargs_torch_dtype(model_kwargs)
-        self.logger.debug(f'using model_kwargs: {model_kwargs}')
-        if is_npu_available():
-            model_kwargs['device_map'] = 'npu'
+            DEFAULT_MODEL_KWARGS = dict(device_map='auto', trust_remote_code=True)
+            model_kwargs = DEFAULT_MODEL_KWARGS
+            model_kwargs.update(kwargs)
+            model_kwargs = _set_model_kwargs_torch_dtype(model_kwargs)
+            self.logger.debug(f'using model_kwargs: {model_kwargs}')
+            if is_npu_available():
+                model_kwargs['device_map'] = 'npu'
 
-        try:
-            self.model = AutoModelForCausalLM.from_pretrained(path, **model_kwargs)
-        except ValueError:
-            self.model = AutoModel.from_pretrained(path, **model_kwargs)
+            try:
+                self.model = AutoModelForCausalLM.from_pretrained(path, **model_kwargs)
+            except ValueError:
+                self.model = AutoModel.from_pretrained(path, **model_kwargs)
 
-        if peft_path is not None:
-            from peft import PeftModel
-            peft_kwargs['is_trainable'] = False
-            self.model = PeftModel.from_pretrained(self.model, peft_path, **peft_kwargs)
+            if peft_path is not None:
+                from peft import PeftModel
+                peft_kwargs['is_trainable'] = False
+                self.model = PeftModel.from_pretrained(self.model, peft_path, **peft_kwargs)
+            self.model.eval()
+            self.model.generation_config.do_sample = False
+        else:
+            assert 'is_quant' in kwargs
+            print(f"kwargs : {kwargs}")
+            if kwargs['is_quant']:
+                print("is_quant is True")
+                model = MODEL_REGISTRY[kwargs['model']["type"]](
+                    # path, 
+                    kwargs,  
+                    device_map="auto", 
+                    use_cache=True
+                    )
+                print(f"model.model : {model.model}")
+                
+                try:
+                    compression_method = model_kwargs["quant"]["method"]
+                    compression_config = model_kwargs["quant"]
+                    blockwise_opt = ALGO_REGISTRY[compression_method](
+                        model, 
+                        quant_config=compression_config, 
+                        input=None, 
+                        padding_mask=None,
+                        config=model_kwargs
+                        )
+                except:
+                    compression_method = model_kwargs["sparse"]["method"]
+                    compression_config = model_kwargs["sparse"]
+                    blockwise_opt = ALGO_REGISTRY[compression_method](
+                        model, 
+                        sparsity_config=compression_config, 
+                        input=None, 
+                        padding_mask=None,
+                        config=model_kwargs
+                        )
 
-        self.model.eval()
-        self.model.generation_config.do_sample = False
+                blockwise_opt.deploy('fake_quant', True)
+                self.model = model.model
+                # self.model.to('cuda')
+                for name, param in self.model.named_parameters():
+                    if param.device != torch.device('cuda'):
+                        print(f"[PARAM NOT ON GPU] {name} is on {param.device}")
+                        param.data = param.data.to('cuda')
+
+                for name, buffer in self.model.named_buffers():
+                    if buffer.device != torch.device('cuda'):
+                        print(f"[BUFFER NOT ON GPU] {name} is on {buffer.device}")
+                        buffer.data = buffer.data.to('cuda')
+
+
+                self.model.eval()
+                self.model.generation_config.do_sample = False
+            else:
+                print("is_quant is False")
+                model = MODEL_REGISTRY[kwargs['model']["type"]](path, kwargs['model']["torch_dtype"], device_map="auto", use_cache=True)
+                print(f"model.model : {model.model}")
+                self.model = model.model
+
+                self.model.eval()
+                self.model.generation_config.do_sample = False
+        print(f"opencompass self.model : {self.model}")
 
 
     def get_ppl_tokenwise(self, inputs: List[str], label: List[List[int]], mask_length: Optional[List[int]] = None) -> List[float]:
@@ -568,6 +640,12 @@ class HuggingFaceBaseModel(HuggingFacewithChatTemplate):
 
         tokens = {k: v.to(self.model.device) for k, v in tokens.items()}
 
+
+        # check the device of data and model
+        # print(f"self.model.device: {self.model.device}")
+        # print(f"tokens device: {tokens}")
+
+
         generation_kwargs = self.generation_kwargs.copy()
         generation_kwargs.update(kwargs)
         stopping_criteria = list(set(stopping_criteria + self.stop_words))
@@ -579,6 +657,7 @@ class HuggingFaceBaseModel(HuggingFacewithChatTemplate):
             generation_kwargs['min_new_tokens'] = min_out_len
         generation_kwargs['pad_token_id'] = self.tokenizer.pad_token_id
 
+        # print(f"generation_kwargs: {generation_kwargs}")
         # step-2: conduct model forward to generate output
         outputs = self.model.generate(**tokens, **generation_kwargs)
         outputs = outputs[:, tokens['input_ids'].shape[1]:]

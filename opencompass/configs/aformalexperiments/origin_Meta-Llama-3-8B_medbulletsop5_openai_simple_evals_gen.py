@@ -57,7 +57,7 @@ medbulletsop5_datasets.append(
     dict(
         abbr=f'medbulletsop5',
         type=MedbulletsOp5Dataset,
-        path='/home/gsb/opencompass/adatasets/temp/LangAGI-Lab/medbullets_op5/data',
+        path='/home/gsb/opencompass/adatasets/meddata/LangAGI-Lab/medbullets_op5/data',
         name='medbulletsop5',
         reader_cfg=medbulletsop5_reader_cfg,
         infer_cfg=medbulletsop5_infer_cfg,

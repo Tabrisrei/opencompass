@@ -55,7 +55,7 @@ medqa_datasets.append(
     dict(
         abbr=f'medqa',
         type=MedQADataset,
-        path='/home/gsb/opencompass/adatasets/temp/GBaker/MedQA-USMLE-4-options-hf',
+        path='/home/gsb/opencompass/adatasets/meddata/GBaker/MedQA-USMLE-4-options-hf',
         name='MedQA-USMLE-4-options-hf',
         reader_cfg=medqa_reader_cfg,
         infer_cfg=medqa_infer_cfg,

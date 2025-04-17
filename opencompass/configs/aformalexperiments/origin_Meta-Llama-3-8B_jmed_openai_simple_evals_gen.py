@@ -73,7 +73,7 @@ jmed_datasets.append(
     dict(
         abbr=f'jmed',
         type=JMEDDataset,
-        path='/home/gsb/opencompass/adatasets/temp/jdh-algo/JMED',
+        path='/home/gsb/opencompass/adatasets/meddata/jdh-algo/JMED',
         name='jmed_en',
         reader_cfg=jmed_reader_cfg,
         infer_cfg=jmed_infer_cfg,

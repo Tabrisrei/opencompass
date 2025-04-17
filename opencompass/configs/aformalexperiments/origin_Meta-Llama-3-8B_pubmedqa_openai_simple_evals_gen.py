@@ -55,7 +55,7 @@ pubmedqa_datasets.append(
     dict(
         abbr=f'pubmedqa',
         type=PubMedQADataset,
-        path='/home/gsb/opencompass/adatasets/temp/qiaojin/PubMedQA/pqa_labeled',
+        path='/home/gsb/opencompass/adatasets/meddata/qiaojin/PubMedQA/pqa_labeled',
         name='pubmedqa',
         reader_cfg=pubmedqa_reader_cfg,
         infer_cfg=pubmedqa_infer_cfg,

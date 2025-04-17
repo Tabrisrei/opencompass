@@ -3,7 +3,7 @@ from opencompass.openicl.icl_prompt_template import PromptTemplate
 from opencompass.openicl.icl_retriever import ZeroRetriever, FixKRetriever
 from opencompass.openicl.icl_inferencer import GenInferencer, PPLInferencer
 from opencompass.openicl.icl_evaluator import AccEvaluator, AccwithDetailsEvaluator
-from opencompass.datasets import MedXpertQADataset
+from opencompass.datasets import PubMedQADataset
 from opencompass.utils.text_postprocessors import match_answer_pattern, first_option_postprocess
 
 # None of the mmlu dataset in huggingface is correctly parsed, so we use our own dataset reader
@@ -16,27 +16,20 @@ QUERY_TEMPLATE_ALTER = """
 A) {A}
 B) {B}
 C) {C}
-D) {D}
-E) {E}
-F) {F}
-G) {G}
-H) {H}
-I) {I}
-J) {J}
 Answer:
 """.strip()
 
-medxpertqa_reader_cfg = dict(
-    input_columns=['input', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'],
+pubmedqa_reader_cfg = dict(
+    input_columns=['input', 'A', 'B', 'C'],
     output_column='target',
-    train_split='dev',
-    test_split='test',
+    # train_split='train',
+    # test_split='validation',
     )
 
-medxpertqa_datasets = []
+pubmedqa_datasets = []
 
 _hint = f'The following are multiple choice questions (with answers) about medical. \n\n'
-medxpertqa_infer_cfg = dict(
+pubmedqa_infer_cfg = dict(
 
     prompt_template=dict(
         type=PromptTemplate,
@@ -53,35 +46,37 @@ medxpertqa_infer_cfg = dict(
     inferencer=dict(type=GenInferencer),
 )
 
-medxpertqa_eval_cfg = dict(
+pubmedqa_eval_cfg = dict(
     evaluator=dict(type=AccwithDetailsEvaluator),
-    pred_postprocessor=dict(type=match_answer_pattern, answer_pattern=r'([A-J])'),
+    pred_postprocessor=dict(type=match_answer_pattern, answer_pattern=r'([A-C])'),
     )
 
-medxpertqa_datasets.append(
+pubmedqa_datasets.append(
     dict(
-        abbr=f'medxpertqa',
-        type=MedXpertQADataset,
-        path='/home/gsb/opencompass/adatasets/meddata/TsinghuaC3I/MedXpertQA/Text',
-        name='medxpertqa',
-        reader_cfg=medxpertqa_reader_cfg,
-        infer_cfg=medxpertqa_infer_cfg,
-        eval_cfg=medxpertqa_eval_cfg,
+        abbr=f'pubmedqa',
+        type=PubMedQADataset,
+        path='/home/gsb/opencompass/adatasets/meddata/qiaojin/PubMedQA/pqa_labeled',
+        name='pubmedqa',
+        reader_cfg=pubmedqa_reader_cfg,
+        infer_cfg=pubmedqa_infer_cfg,
+        eval_cfg=pubmedqa_eval_cfg,
     ))
 
 
-datasets = [*medxpertqa_datasets]
+datasets = [*pubmedqa_datasets]
 # =============================================================================
 from opencompass.models import HuggingFaceCausalLM, HuggingFaceBaseModel
 
 models = [
     dict(
         type=HuggingFaceCausalLM,
-        abbr='origin_Meta-Llama3-8B_medxpertqa_openai_simple_evals_gen', # 运行完结果展示的名称
-        path='abase_models/meta-llama/Meta-Llama-3-8B', # 模型路径
-        tokenizer_path='abase_models/meta-llama/Meta-Llama-3-8B', # 分词器路径
+        # type=HuggingFaceBaseModel,
+        abbr='smqu_w_only_8b_trans_Meta-Llama3-8B_pubmedqa_openai_simple_evals_gen', # 运行完结果展示的名称
+        # path='atrans_models/meta-llama/gptq_w_only_8b_Meta-Llama-3-8B/transformed_model', # 模型路径
+        # tokenizer_path='atrans_models/meta-llama/gptq_w_only_8b_Meta-Llama-3-8B/transformed_model', # 分词器路径
+        tokenizer_path='abase_models/meta-llama/Meta-Llama-3-8B',
         model_kwargs=dict(
-                        cache_dir='base_models/meta-llama/Meta-Llama-3-8B',
+                        cache_dir='atrans_models/meta-llama/smqu_w_only_8b_Meta-Llama-3-8B/transformed_model',
                         device_map='auto', 
                         trust_remote_code=True, 
                         ), # kwargs for model loading from_pretrained

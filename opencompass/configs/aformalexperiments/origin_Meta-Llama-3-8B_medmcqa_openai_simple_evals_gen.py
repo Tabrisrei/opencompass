@@ -56,7 +56,7 @@ medmcqa_datasets.append(
     dict(
         abbr=f'medmcqa',
         type=MedMCQADataset,
-        path='/home/gsb/opencompass/adatasets/temp/openlifescienceai/medmcqa/data',
+        path='/home/gsb/opencompass/adatasets/meddata/openlifescienceai/medmcqa/data',
         name='medmcqa',
         reader_cfg=medmcqa_reader_cfg,
         infer_cfg=medmcqa_infer_cfg,

@@ -55,7 +55,7 @@ careqa_datasets.append(
     dict(
         abbr=f'careqa',
         type=CareQADataset,
-        path='/home/gsb/opencompass/adatasets/temp/CareQA',
+        path='/home/gsb/opencompass/adatasets/meddata/CareQA',
         name='CareQA_en',
         reader_cfg=careqa_reader_cfg,
         infer_cfg=careqa_infer_cfg,

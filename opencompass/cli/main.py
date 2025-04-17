@@ -5,6 +5,7 @@ import copy
 import getpass
 import os
 import os.path as osp
+import yaml
 from datetime import datetime
 
 from mmengine.config import Config, DictAction
@@ -21,6 +22,9 @@ from opencompass.utils.run import (fill_eval_cfg, fill_infer_cfg,
 def parse_args():
     parser = argparse.ArgumentParser(description='Run an evaluation task')
     parser.add_argument('config', nargs='?', help='Train config file path')
+    parser.add_argument('--llmc_cfg', default='', type=str)
+    parser.add_argument('--llmc_eval_mode', default='quant', choices=['quant', 'pretrain'])
+    parser.add_argument('--llmc_model_path', default='', type=str)
 
     # add mutually exclusive args `--slurm` `--dlc`, defaults to local runner
     # if "infer" or "eval" not specified
@@ -334,6 +338,25 @@ def main():
             for task in tasks:
                 cfg.attack.dataset = task.datasets[0][0].abbr
                 task.attack = cfg.attack
+
+
+        if args.llmc_cfg:
+            with open(args.llmc_cfg, 'r') as file:
+                llmc_cfg = yaml.safe_load(file)
+            for task in tasks:
+                for model in task.models:
+                    if 'path' in model:
+                        raise Exception(f'Do not set path in opencompass config.')
+                    model['path'] = args.llmc_model_path
+                    if args.llmc_eval_mode == "quant":
+                        model['model_kwargs'] = llmc_cfg
+                        model['model_kwargs']['is_quant'] = True
+                    elif args.llmc_eval_mode == "pretrain":
+                        model['model_kwargs'] = llmc_cfg
+                        model['model_kwargs']['is_quant'] = False
+                    else:
+                        raise Exception(f'Not support {args.llmc_eval_mode} llmc_eval_mode.')
+
         runner(tasks)
 
     # evaluate

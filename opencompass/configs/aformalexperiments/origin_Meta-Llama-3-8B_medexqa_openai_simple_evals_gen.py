@@ -62,7 +62,7 @@ for _name in medexqa_all_sets:
         dict(
             abbr=f'medexqa_{_name}',
             type=MedExQADataset,
-            path='/home/gsb/opencompass/adatasets/temp/bluesky333/MedExQA',
+            path='/home/gsb/opencompass/adatasets/meddata/bluesky333/MedExQA',
             name=_name,
             reader_cfg=medexqa_reader_cfg,
             infer_cfg=medexqa_infer_cfg,
